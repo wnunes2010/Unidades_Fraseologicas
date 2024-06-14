@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <title>Unidades Fraseológicas Somáticas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .box {
+            width: 45%;
+            min-height: 200px;
+            border: 1px solid #000;
+            padding: 10px;
+            background-color: #F5F5DC;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        .title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+        h1 {
+            color: #333;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 25%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        select {
+            width: 25%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .content {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-align: justify;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+    <script>
+        let data = {};
+
+        function carregarDados(idioma, opcao) {
+            let caminhoArquivo = `http://localhost:8000/df_${opcao}_${idioma}.html`;
+            fetch(caminhoArquivo)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Arquivo não encontrado');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    let parser = new DOMParser();
+                    let doc = parser.parseFromString(text, 'text/html');
+                    let rows = doc.querySelectorAll('table tbody tr');
+                    data = {}; // Limpar os dados antigos
+                    rows.forEach(row => {
+                        let cols = row.querySelectorAll('td');
+                        if (cols.length >= 3) {
+                            let unidadesFraseologicas = cols[0].innerText.trim();
+                            let significado = cols[1].innerText.trim();
+                            let fragmento = cols[2].innerText.trim();
+                            data[unidadesFraseologicas] = { significado, fragmento };
+                        }
+                    });
+                    configurarAutoPreenchimento();
+                    document.getElementById('error-message').style.display = 'none';
+                })
+                .catch(error => {
+                    document.getElementById('error-message').style.display = 'block';
+                });
+        }
+
+        function configurarAutoPreenchimento() {
+            let input = document.getElementById('unidades-input');
+            let datalist = document.getElementById('unidades-datalist');
+            datalist.innerHTML = ''; // Limpar as opções anteriores
+            let defaultOption = document.createElement('option');
+            defaultOption.value = "Selecione";
+            defaultOption.text = "Selecione";
+            datalist.appendChild(defaultOption);
+
+            Object.keys(data).forEach(unidade => {
+                let option = document.createElement('option');
+                option.value = unidade;
+                datalist.appendChild(option);
+            });
+
+            input.addEventListener('input', function () {
+                let value = this.value;
+                if (data[value]) {
+                    document.getElementById('definicao-box').style.display = 'block';
+                    document.getElementById('fragmento-box').style.display = 'block';
+                    document.getElementById('definicao').innerText = data[value].significado;
+                    document.getElementById('fragmento').innerText = data[value].fragmento;
+                } else {
+                    document.getElementById('definicao-box').style.display = 'none';
+                    document.getElementById('fragmento-box').style.display = 'none';
+                    document.getElementById('definicao').innerText = '';
+                    document.getElementById('fragmento').innerText = '';
+                }
+            });
+        }
+
+        function atualizarOpcoes() {
+            let idioma = document.getElementById('idioma-select').value;
+            let opcoesSelect = document.getElementById('opcoes-select');
+            opcoesSelect.innerHTML = ''; // Limpar opções anteriores
+
+            if (idioma === '') {
+                return;
+            }
+
+            let opcoesEspanhol = ['boca', 'cabeza', 'cara', 'nariz', 'ojo', 'oreja'];
+            let opcoesPortugues = ['boca', 'cabeça', 'cara', 'nariz', 'olho', 'orelha'];
+
+            let opcoes = idioma === 'es' ? opcoesEspanhol : opcoesPortugues;
+            opcoes.forEach(opcao => {
+                let option = document.createElement('option');
+                option.value = opcao;
+                option.text = opcao;
+                opcoesSelect.appendChild(option);
+            });
+
+            // Resetar a caixa de seleção de unidades fraseológicas
+            document.getElementById('unidades-input').value = '';
+            document.getElementById('unidades-datalist').innerHTML = '<option value="">Selecione</option>';
+
+            // Carregar dados para a primeira opção padrão
+            if (opcoes.length > 0) {
+                carregarDados(idioma, opcoes[0]);
+            }
+        }
+
+        function selecionarOpcao() {
+            let idioma = document.getElementById('idioma-select').value;
+            let opcao = document.getElementById('opcoes-select').value;
+            carregarDados(idioma, opcao);
+        }
+
+        function limparBusca() {
+            document.getElementById('idioma-select').value = '';
+            document.getElementById('opcoes-select').innerHTML = '<option value="">Selecione um somatismo</option>';
+            document.getElementById('unidades-input').value = '';
+            document.getElementById('unidades-datalist').innerHTML = '<option value="">Selecione</option>';
+            document.getElementById('definicao-box').style.display = 'none';
+            document.getElementById('fragmento-box').style.display = 'none';
+            document.getElementById('definicao').innerText = '';
+            document.getElementById('fragmento').innerText = '';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('idioma-select').addEventListener('change', atualizarOpcoes);
+            document.getElementById('opcoes-select').addEventListener('change', selecionarOpcao);
+        });
+    </script>
+</head>
+<body>
+    <h1>Unidades Fraseológicas Somáticas</h1>
+    <label for="idioma-select">Escolha o idioma:</label>
+    <select id="idioma-select">
+        <option value="">Selecione...</option>
+        <option value="pt">Português</option>
+        <option value="es">Espanhol</option>
+    </select>
+    <br>
+    <label for="opcoes-select">Somatismos:</label>
+    <select id="opcoes-select">
+        <option value="">Selecione um somatismo</option>
+    </select>
+    <br>
+    <label for="unidades-input">Unidades Fraseológicas:</label>
+    <input list="unidades-datalist" id="unidades-input" type="text">
+    <datalist id="unidades-datalist">
+        <option value="">Selecione</option>
+    </datalist>
+    <br>
+    <button onclick="limparBusca()">Limpar Busca</button>
+    <p id="error-message" class="error-message">Arquivo não encontrado para a opção selecionada.</p>
+    <div class="container">
+        <div id="definicao-box" class="box">
+            <div class="title">Definição</div>
+            <div class="content">
+                <p id="definicao"></p>
+            </div>
+        </div>
+        <div id="fragmento-box" class="box">
+            <div class="title">Fragmento</div>
+            <div class="content">
+                <p id="fragmento"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
