@@ -76,7 +76,7 @@
         let data = {};
 
         function carregarDados(idioma, opcao) {
-            let caminhoArquivo = `http://localhost:8000/df_${opcao}_${idioma}.html`;
+            let caminhoArquivo = `dados/df_${opcao}_${idioma}.html`;
             fetch(caminhoArquivo)
                 .then(response => {
                     if (!response.ok) {
@@ -110,11 +110,6 @@
             let input = document.getElementById('unidades-input');
             let datalist = document.getElementById('unidades-datalist');
             datalist.innerHTML = ''; // Limpar as opções anteriores
-            let defaultOption = document.createElement('option');
-            defaultOption.value = "Selecione";
-            defaultOption.text = "Selecione";
-            datalist.appendChild(defaultOption);
-
             Object.keys(data).forEach(unidade => {
                 let option = document.createElement('option');
                 option.value = unidade;
